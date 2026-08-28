@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Care Worker Compliance — Admin Upload</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a2744;--teal:#0f766e;--teal-l:#ccfbf1;
+  --green:#15803d;--green-l:#dcfce7;--green-d:#14532d;
+  --red:#dc2626;--red-l:#fee2e2;--red-d:#7f1d1d;
+  --amber:#b45309;--amber-l:#fef3c7;
+  --border:#e5e7eb;--page:#f1f5f9;--text:#111827;--muted:#6b7280;
+  --blue:#1d4ed8;--blue-l:#dbeafe;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--page);color:var(--text);min-height:100vh}
+header{background:var(--navy);color:#fff;padding:1rem 2rem;display:flex;align-items:center;gap:1rem}
+.logo{width:38px;height:38px;background:var(--teal);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700;flex-shrink:0}
+header h1{font-size:1.1rem;font-weight:600}
+header p{font-size:.72rem;opacity:.6;margin-top:2px}
+.back-link{margin-left:auto;color:rgba(255,255,255,.75);font-size:.8rem;text-decoration:none;border:1px solid rgba(255,255,255,.25);padding:.35rem .85rem;border-radius:7px;transition:background .15s}
+.back-link:hover{background:rgba(255,255,255,.15)}
+
+.login-wrap{min-height:calc(100vh - 64px);display:flex;align-items:center;justify-content:center;padding:2rem}
+.login-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:2.5rem 2rem;width:100%;max-width:380px;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.06)}
+.login-card h2{font-size:1.2rem;font-weight:700;color:var(--navy);margin:.75rem 0 .35rem}
+.login-card p{font-size:.82rem;color:var(--muted);margin-bottom:1.5rem}
+.input-group{text-align:left;margin-bottom:1rem}
+.input-group label{display:block;font-size:.75rem;font-weight:600;color:var(--navy);margin-bottom:.35rem}
+.input-group input{width:100%;padding:.6rem .85rem;border:1px solid var(--border);border-radius:9px;font-size:.875rem;outline:none;transition:border-color .15s}
+.input-group input:focus{border-color:var(--teal)}
+.login-btn{width:100%;padding:.75rem;background:var(--navy);color:#fff;border:none;border-radius:9px;font-size:.9rem;font-weight:600;cursor:pointer}
+.login-btn:hover{opacity:.9}
+.error-msg{display:none;color:var(--red);font-size:.78rem;margin-top:.75rem;font-weight:500}
+
+.admin-wrap{max-width:820px;margin:0 auto;padding:2rem}
+.welcome-bar{background:var(--green-l);border:1px solid #86efac;border-radius:10px;padding:.75rem 1.1rem;display:flex;align-items:center;gap:.75rem;font-size:.82rem;font-weight:500;color:var(--green-d);margin-bottom:1.5rem}
+.logout-btn{margin-left:auto;background:none;border:1px solid #86efac;color:var(--green-d);padding:.3rem .75rem;border-radius:7px;font-size:.75rem;font-weight:600;cursor:pointer}
+.logout-btn:hover{background:#bbf7d0}
+.section-title{font-size:.95rem;font-weight:700;color:var(--navy);margin-bottom:.25rem}
+.section-sub{font-size:.78rem;color:var(--muted);margin-bottom:1rem}
+.notice{background:var(--blue-l);border:1px solid #93c5fd;border-radius:8px;padding:.7rem 1rem;font-size:.78rem;color:var(--blue);margin-bottom:1.25rem;line-height:1.5}
+
+.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:.85rem;margin-bottom:.85rem}
+.file-slot{background:#fff;border:2px dashed var(--border);border-radius:12px;padding:1.1rem 1rem;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;position:relative}
+.file-slot.assigned{border-style:solid;border-color:var(--teal);background:var(--teal-l)}
+.file-slot:hover:not(.assigned){border-color:var(--teal)}
+.file-slot input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.slot-icon{font-size:1.4rem;margin-bottom:.3rem}
+.slot-label{font-size:.7rem;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.04em}
+.slot-sub{font-size:.63rem;color:var(--muted);margin-top:.1rem}
+.slot-filename{font-size:.64rem;color:var(--green-d);font-weight:600;margin-top:.35rem;word-break:break-all}
+.area-slot{grid-column:1/-1;border-color:#7c3aed44;background:#faf5ff}
+.area-slot:hover:not(.assigned){border-color:#7c3aed}
+.area-slot.assigned{border-style:solid;border-color:#7c3aed;background:#ede9fe}
+.area-slot .slot-label{color:#5b21b6}
+
+.drop-zone{background:#fff;border:2px dashed var(--border);border-radius:12px;padding:1.5rem;text-align:center;margin-bottom:.85rem;cursor:pointer;position:relative;transition:border-color .15s}
+.drop-zone:hover{border-color:var(--teal)}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+
+.upload-btn{width:100%;padding:.8rem;font-size:.9rem;font-weight:700;border-radius:10px;background:var(--teal);color:#fff;border:none;cursor:pointer;transition:opacity .15s;margin-top:.25rem}
+.upload-btn:hover{opacity:.9}
+.upload-btn:disabled{opacity:.4;cursor:not-allowed}
+
+.status-bar{min-height:2rem;margin-top:.75rem;border-radius:8px;padding:.55rem 1rem;font-size:.8rem;font-weight:500;display:none;align-items:center;gap:.5rem}
+.status-bar.success{display:flex;background:var(--green-l);color:var(--green-d);border:1px solid #86efac}
+.status-bar.error{display:flex;background:var(--red-l);color:var(--red-d);border:1px solid #fca5a5}
+.status-bar.processing{display:flex;background:var(--amber-l);color:#78350f;border:1px solid #fcd34d}
+
+.current-data{margin-top:1.75rem;background:#fff;border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.25rem}
+.current-data h3{font-size:.82rem;font-weight:700;color:var(--navy);margin-bottom:.6rem}
+.data-row{display:flex;align-items:center;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid #f3f4f6;font-size:.78rem}
+.data-row:last-child{border-bottom:none}
+.data-row .lbl{color:var(--muted)}
+.data-row .val{font-weight:600;color:var(--navy)}
+.data-row .val.ok{color:var(--green)}
+.data-row .val.missing{color:var(--red)}
+.danger-zone{margin-top:1.25rem;background:#fff;border:1px solid #fca5a5;border-radius:12px;padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.danger-zone h4{font-size:.82rem;font-weight:700;color:var(--red);margin-bottom:.2rem}
+.danger-zone p{font-size:.72rem;color:var(--muted)}
+.clear-btn{background:var(--red-l);color:var(--red-d);border:1px solid #fca5a5;padding:.4rem .9rem;border-radius:7px;font-size:.75rem;font-weight:700;cursor:pointer;white-space:nowrap}
+.clear-btn:hover{background:#fecaca}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">C</div>
+  <div>
+    <h1>Admin Upload Panel</h1>
+    <p>Care Worker Compliance — Data Management</p>
+  </div>
+  <a href="cw-index.html" class="back-link">← Back to Dashboard</a>
+</header>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="loginSection">
+  <div class="login-card">
+    <div style="font-size:2.5rem">🔐</div>
+    <h2>Admin Login</h2>
+    <p>Enter your password to access the data upload panel</p>
+    <div class="input-group">
+      <label>Password</label>
+      <input type="password" id="passwordInput" placeholder="Enter admin password"
+             onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" onclick="doLogin()">Login</button>
+    <div class="error-msg" id="errorMsg">❌ Incorrect password. Please try again.</div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminSection" style="display:none">
+<div class="admin-wrap">
+
+  <div class="welcome-bar">
+    ✅ Logged in as Administrator &nbsp;·&nbsp; Uploads save to shared cloud storage — all users see updated data instantly
+    <button class="logout-btn" onclick="doLogout()">Logout</button>
+  </div>
+
+  <div class="section-title">Upload People Planner Exports</div>
+  <div class="section-sub">Drop all files at once or upload individually. Processed data is saved to the cloud and the dashboard updates for everyone immediately.</div>
+
+  <div class="notice">
+    Files are processed in your browser and saved to JSONBin cloud storage.
+    All devices viewing the dashboard will see the updated data straight away.
+  </div>
+
+  <div class="drop-zone" id="dropZone">
+    <input type="file" id="bulkUpload" multiple accept=".xls,.csv">
+    <div style="font-size:2rem;margin-bottom:.35rem">📂</div>
+    <div style="font-weight:600;color:var(--navy);font-size:.9rem">Drop all files here, or click to browse</div>
+    <div style="font-size:.75rem;color:var(--muted);margin-top:.2rem">6 compliance exports (.xls) + Staff Export (.csv)</div>
+  </div>
+
+  <div class="upload-grid">
+    <div class="file-slot" id="slot-tasks_complete">
+      <input type="file" accept=".xls" data-slot="tasks_complete">
+      <div class="slot-icon">✅</div>
+      <div class="slot-label">Tasks – Complete</div>
+      <div class="slot-sub">Care_Assistant_Tasks_complete.xls</div>
+      <div class="slot-filename" id="fn-tasks_complete"></div>
+    </div>
+    <div class="file-slot" id="slot-tasks_overdue">
+      <input type="file" accept=".xls" data-slot="tasks_overdue">
+      <div class="slot-icon">🔴</div>
+      <div class="slot-label">Tasks – Overdue</div>
+      <div class="slot-sub">Care_Assistant_Tasks_overdue.xls</div>
+      <div class="slot-filename" id="fn-tasks_overdue"></div>
+    </div>
+    <div class="file-slot" id="slot-tasks_due">
+      <input type="file" accept=".xls" data-slot="tasks_due">
+      <div class="slot-icon">🟡</div>
+      <div class="slot-label">Tasks – Due</div>
+      <div class="slot-sub">Care_Assistant_Tasks_due.xls</div>
+      <div class="slot-filename" id="fn-tasks_due"></div>
+    </div>
+    <div class="file-slot" id="slot-training_passed">
+      <input type="file" accept=".xls" data-slot="training_passed">
+      <div class="slot-icon">🎓</div>
+      <div class="slot-label">Training – Passed</div>
+      <div class="slot-sub">Care_Assistant_Training_passed.xls</div>
+      <div class="slot-filename" id="fn-training_passed"></div>
+    </div>
+    <div class="file-slot" id="slot-training_due">
+      <input type="file" accept=".xls" data-slot="training_due">
+      <div class="slot-icon">📅</div>
+      <div class="slot-label">Training – Due</div>
+      <div class="slot-sub">Care_Assistant_Training_Due.xls</div>
+      <div class="slot-filename" id="fn-training_due"></div>
+    </div>
+    <div class="file-slot" id="slot-training_overdue">
+      <input type="file" accept=".xls" data-slot="training_overdue">
+      <div class="slot-icon">⚠️</div>
+      <div class="slot-label">Training – Overdue</div>
+      <div class="slot-sub">Care_Assistant_Training_overdue.xls</div>
+      <div class="slot-filename" id="fn-training_overdue"></div>
+    </div>
+    <div class="file-slot area-slot" id="slot-area_csv">
+      <input type="file" accept=".csv" data-slot="area_csv">
+      <div class="slot-icon">🗺️</div>
+      <div class="slot-label">Staff Export <span style="text-transform:none;font-weight:400;letter-spacing:0;color:#7c3aed;font-size:.65rem">(area mapping)</span></div>
+      <div class="slot-sub">Care_AssistantExport_Area.csv</div>
+      <div class="slot-filename" id="fn-area_csv"></div>
+    </div>
+  </div>
+
+  <button class="upload-btn" id="uploadBtn" onclick="processAndSave()" disabled>
+    Save to Dashboard
+  </button>
+  <div class="status-bar" id="statusBar"></div>
+
+  <div class="current-data">
+    <h3>📊 Currently Saved Data</h3>
+    <div id="currentDataRows"><div style="font-size:.78rem;color:var(--muted);padding:.5rem 0">Loading…</div></div>
+  </div>
+
+  <div class="danger-zone">
+    <div>
+      <h4>🗑 Clear All Data</h4>
+      <p>Removes all saved compliance data from the dashboard for all users.</p>
+    </div>
+    <button class="clear-btn" onclick="clearData()">Clear All Data</button>
+  </div>
+
+</div>
+</div>
+
+<script>
+const ADMIN_PASSWORD = 'cw2026';
+const BIN_ID  = '6a9150ebda38895dfe1b8c75';
+const BIN_KEY = '$2a$10$xKsVPGYva55CZIP4jyG/du9z.j/QwoAHXpUQnf5qK57T7aDqwS/UW';
+const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+const NS = 'urn:schemas-microsoft-com:office:spreadsheet';
+
+const OFFICE_ROLES = ['care manager', 'care coordinator', 'field care supervisor'];
+const EXCLUDED_NAMES = ['to be allocated'];
+
+const ITEMS = [
+  {id:'practical',   col:'Practical Mandatory',       src:'training'},
+  {id:'elearning',   col:'E-Learn Mandatory Modules', src:'training'},
+  {id:'dols',        col:'DoLS',                      src:'training'},
+  {id:'care_cert',   col:'Care Certificate',          src:'training'},
+  {id:'driving',     col:'Driving License',           src:'tasks'},
+  {id:'mot',         col:'MOT',                       src:'tasks'},
+  {id:'insurance',   col:'Car Insurance',             src:'tasks'},
+  {id:'niscc',       col:'NISCC',                     src:'tasks'},
+  {id:'supervision', col:'Supervision',               src:'tasks'},
+  {id:'yearly',      col:'Yearly Review',             src:'tasks'},
+  {id:'spot_check',  src:'tasks', special:'spotcheck', cols:['Spot Check','M&H Obs Competency','Meds Obs Competency']},
+];
+
+let fileStore = {};
+
+// ── LOGIN ──
+function doLogin() {
+  if (document.getElementById('passwordInput').value === ADMIN_PASSWORD) {
+    document.getElementById('loginSection').style.display = 'none';
+    document.getElementById('adminSection').style.display = 'block';
+    loadCurrentDataInfo();
+  } else {
+    document.getElementById('errorMsg').style.display = 'block';
+    document.getElementById('passwordInput').value = '';
+  }
+}
+function doLogout() {
+  document.getElementById('adminSection').style.display = 'none';
+  document.getElementById('loginSection').style.display = 'flex';
+  document.getElementById('passwordInput').value = '';
+  document.getElementById('errorMsg').style.display = 'none';
+  fileStore = {};
+}
+
+// ── FILE DETECTION ──
+function detectType(name) {
+  const f = name.toLowerCase();
+  if (f.endsWith('.csv') || f.includes('export') || f.includes('staff')) return 'area_csv';
+  if (f.includes('task')) {
+    if (f.includes('complete')) return 'tasks_complete';
+    if (f.includes('overdue'))  return 'tasks_overdue';
+    if (f.includes('due'))      return 'tasks_due';
+  }
+  if (f.includes('training') || f.includes('qualification')) {
+    if (f.includes('passed') || f.includes('pass')) return 'training_passed';
+    if (f.includes('overdue'))  return 'training_overdue';
+    if (f.includes('due'))      return 'training_due';
+  }
+  return null;
+}
+
+function handleFiles(files) {
+  let n = 0;
+  for (const f of files) {
+    const t = detectType(f.name);
+    if (!t) continue;
+    fileStore[t] = f; n++;
+    document.getElementById('slot-' + t)?.classList.add('assigned');
+    const fn = document.getElementById('fn-' + t);
+    if (fn) fn.textContent = f.name;
+  }
+  document.getElementById('uploadBtn').disabled = n === 0;
+}
+
+document.getElementById('bulkUpload').addEventListener('change', e => handleFiles(e.target.files));
+document.querySelectorAll('.file-slot input[type=file]').forEach(inp => {
+  inp.addEventListener('change', e => {
+    const f = e.target.files[0]; if (!f) return;
+    const slot = e.target.dataset.slot;
+    fileStore[slot] = f;
+    document.getElementById('slot-' + slot).classList.add('assigned');
+    document.getElementById('fn-' + slot).textContent = f.name;
+    document.getElementById('uploadBtn').disabled = false;
+  });
+});
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.style.borderColor = 'var(--teal)'; });
+dz.addEventListener('dragleave', () => dz.style.borderColor = '');
+dz.addEventListener('drop', e => { e.preventDefault(); dz.style.borderColor = ''; handleFiles(e.dataTransfer.files); });
+
+// ── PARSERS ──
+function parseXLS(xmlText) {
+  const doc = new DOMParser().parseFromString(xmlText, 'application/xml');
+  const rows = doc.getElementsByTagNameNS(NS, 'Row');
+  let headers = null;
+  const result = {};
+  for (const row of rows) {
+    const cells = row.getElementsByTagNameNS(NS, 'Cell');
+    const vals = []; let ci = 0;
+    for (const cell of cells) {
+      const idx = cell.getAttributeNS(NS, 'Index');
+      if (idx) ci = parseInt(idx) - 1;
+      const d = cell.getElementsByTagNameNS(NS, 'Data')[0];
+      vals[ci] = d ? d.textContent : null; ci++;
+    }
+    if (!headers) { headers = vals; continue; }
+    const name = vals[0] && vals[0].trim();
+    if (!name) continue;
+    result[name] = result[name] || {};
+    for (let i = 1; i < headers.length; i++) {
+      if (vals[i] && headers[i]) result[name][headers[i]] = vals[i];
+    }
+  }
+  return result;
+}
+
+function parseAreaCSV(text) {
+  const map = {};
+  const lines = text.split(/\r?\n/);
+  if (!lines.length) return map;
+  const headers = parseCSVRow(lines[0]).map(h => h.trim().toLowerCase());
+  const firstI = headers.findIndex(h => h === 'first name' || h === 'firstname');
+  const lastI  = headers.findIndex(h => h === 'last name'  || h === 'lastname' || h === 'surname');
+  const areaI  = headers.findIndex(h => h === 'area');
+  const roleI  = headers.findIndex(h => h === 'employee type' || h === 'position');
+  if (firstI < 0 || lastI < 0 || areaI < 0) return map;
+  for (let i = 1; i < lines.length; i++) {
+    const cols  = parseCSVRow(lines[i]);
+    const first = (cols[firstI] || '').trim();
+    const last  = (cols[lastI]  || '').trim();
+    const area  = (cols[areaI]  || '').trim();
+    const role  = (roleI >= 0 ? cols[roleI] || '' : '').trim().toLowerCase();
+    if (!first || !last) continue;
+    const assignedArea = OFFICE_ROLES.includes(role) ? 'Office Staff' : area;
+    if (assignedArea) map[last + ', ' + first] = assignedArea;
+  }
+  return map;
+}
+
+function parseCSVRow(line) {
+  const result = []; let cur = '', inQ = false;
+  for (const ch of line) {
+    if (ch === '"') { inQ = !inQ; continue; }
+    if (ch === ',' && !inQ) { result.push(cur); cur = ''; continue; }
+    cur += ch;
+  }
+  result.push(cur);
+  return result;
+}
+
+// ── STATUS LOGIC ──
+function getStatus(w, item, parsedData) {
+  if (item.special === 'spotcheck') return getSpotCheck(w, parsedData);
+  const src = item.src, col = item.col;
+  const oKey = src==='training'?'training_overdue':'tasks_overdue';
+  const dKey = src==='training'?'training_due':'tasks_due';
+  const cKey = src==='training'?'training_passed':'tasks_complete';
+  const od = parsedData[oKey]?.[w]?.[col];
+  const dd = parsedData[dKey]?.[w]?.[col];
+  const cd = parsedData[cKey]?.[w]?.[col];
+  if (item.id==='care_cert') return {s:'c',d:cd?cd.substring(0,10):''}; // compliant if ever done
+  if (item.id==='care_cert'&&!cd) return {s:'m',d:''};
+  if (od) return {s:'o', d:od.substring(0,10)};
+  if (dd) return {s:'d', d:dd.substring(0,10)};
+  if (cd) return {s:'c', d:cd.substring(0,10)};
+  return {s:'m', d:''};
+}
+
+function getSpotCheck(w, parsedData) {
+  const cols = ['Spot Check','M&H Obs Competency','Meds Obs Competency'];
+  let anyOv=false, anyDue=false, dates=[];
+  for (const col of cols) {
+    if (parsedData.tasks_overdue?.[w]?.[col]) anyOv=true;
+    if (parsedData.tasks_due?.[w]?.[col])     anyDue=true;
+    const cd=parsedData.tasks_complete?.[w]?.[col];
+    if (cd) dates.push(cd.substring(0,10));
+  }
+  if (anyOv) return {s:'o',d:''};
+  if (dates.length===3) {
+    const same=dates[0]===dates[1]&&dates[1]===dates[2];
+    if (same&&!anyDue) return {s:'c',d:dates[0]};
+    if (same&&anyDue)  return {s:'d',d:''};
+    return {s:'o',d:''};
+  }
+  if (anyDue) return {s:'d',d:''};
+  if (dates.length>0) return {s:'o',d:''};
+  return {s:'m',d:''};
+}
+
+// care_cert fix
+function getStatusFixed(w, item, parsedData) {
+  if (item.id === 'care_cert') {
+    const cd = parsedData.training_passed?.[w]?.['Care Certificate'];
+    return cd ? {s:'c',d:cd.substring(0,10)} : {s:'m',d:''};
+  }
+  return getStatus(w, item, parsedData);
+}
+
+// ── PROCESS & SAVE ──
+async function processAndSave() {
+  const btn = document.getElementById('uploadBtn');
+  btn.disabled = true; btn.textContent = 'Processing…';
+  showStatus('processing', '⏳ Parsing files and saving to cloud…');
+
+  try {
+    const keys = ['tasks_complete','tasks_overdue','tasks_due','training_passed','training_due','training_overdue'];
+    const parsedData = {};
+    for (const k of keys) {
+      parsedData[k] = fileStore[k] ? parseXLS(await fileStore[k].text()) : {};
+    }
+
+    const areaMap = fileStore.area_csv ? parseAreaCSV(await fileStore.area_csv.text()) : {};
+
+    // Collect workers
+    const ns = new Set();
+    keys.forEach(k => Object.keys(parsedData[k]||{}).forEach(n => ns.add(n)));
+    const allWorkers = Array.from(ns)
+      .filter(n => !EXCLUDED_NAMES.some(ex => n.toLowerCase().includes(ex)))
+      .sort();
+
+    // Build compressed payload
+    const workers = {};
+    for (const w of allWorkers) {
+      workers[w] = {
+        a: areaMap[w] || '',
+        i: ITEMS.map(item => getStatusFixed(w, item, parsedData))
+      };
+    }
+
+    const payload = {
+      updated: new Date().toISOString(),
+      count: allWorkers.length,
+      workers
+    };
+
+    // Check size
+    const json = JSON.stringify(payload);
+    const kb = (new Blob([json]).size / 1024).toFixed(1);
+    console.log(`Payload size: ${kb}kb`);
+
+    // Save to JSONBin
+    const resp = await fetch(BIN_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': BIN_KEY },
+      body: json
+    });
+
+    if (!resp.ok) throw new Error(`JSONBin error: ${resp.status} ${resp.statusText}`);
+
+    showStatus('success', `✅ Saved to cloud — ${allWorkers.length} staff members updated. Dashboard is now live for all users.`);
+    loadCurrentDataInfo();
+  } catch (err) {
+    showStatus('error', '❌ Error: ' + err.message);
+  }
+
+  btn.disabled = false; btn.textContent = 'Save to Dashboard';
+}
+
+function showStatus(type, msg) {
+  const bar = document.getElementById('statusBar');
+  bar.className = 'status-bar ' + type;
+  bar.textContent = msg;
+}
+
+async function loadCurrentDataInfo() {
+  const container = document.getElementById('currentDataRows');
+  try {
+    const resp = await fetch(BIN_URL + '/latest', { headers: { 'X-Master-Key': BIN_KEY } });
+    if (!resp.ok) throw new Error('No data');
+    const json = await resp.json();
+    const data = json.record;
+    if (!data || !data.updated) {
+      container.innerHTML = `<div style="font-size:.78rem;color:var(--muted);padding:.5rem 0">No data saved yet.</div>`;
+      return;
+    }
+    const updated = new Date(data.updated).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    const areas = data.workers ? [...new Set(Object.values(data.workers).map(w=>w.a).filter(Boolean))] : [];
+    container.innerHTML = `
+      <div class="data-row"><span class="lbl">Last updated</span><span class="val ok">${updated}</span></div>
+      <div class="data-row"><span class="lbl">Staff members</span><span class="val ok">${data.count || 0} loaded</span></div>
+      <div class="data-row"><span class="lbl">Areas</span><span class="val ok">${areas.length > 0 ? areas.sort().join(', ') : 'None mapped'}</span></div>`;
+  } catch {
+    container.innerHTML = `<div style="font-size:.78rem;color:var(--muted);padding:.5rem 0">No data saved yet.</div>`;
+  }
+}
+
+async function clearData() {
+  if (!confirm('Are you sure? This will clear all saved compliance data for all users.')) return;
+  try {
+    await fetch(BIN_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': BIN_KEY },
+      body: JSON.stringify({data:{}})
+    });
+    showStatus('success', '🗑 All data cleared.');
+    loadCurrentDataInfo();
+    document.querySelectorAll('.file-slot').forEach(s => s.classList.remove('assigned'));
+    document.querySelectorAll('.slot-filename').forEach(s => s.textContent = '');
+    document.getElementById('uploadBtn').disabled = true;
+    fileStore = {};
+  } catch(err) {
+    showStatus('error', '❌ Error clearing data: ' + err.message);
+  }
+}
+</script>
+</body>
+</html>
