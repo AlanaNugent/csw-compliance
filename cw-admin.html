@@ -211,7 +211,7 @@ header p{font-size:.72rem;opacity:.6;margin-top:2px}
 <script>
 const ADMIN_PASSWORD = 'cw2026';
 const BIN_ID  = '6ab4e813ac6210605af022a9';
-const BIN_KEY = '$2a$10$2UzeQIfnqp.n1592WX1T5elBe7rSfh1iZuWJwcKIeDM3X3ikm7MeG';
+const BIN_KEY = '$2a$10$ArDOgQ/w.Cp7NBJb276B0eVP2ITfSQlL.ap7uY1muhcUePMlvxiz6';
 const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 const NS = 'urn:schemas-microsoft-com:office:spreadsheet';
 
@@ -452,7 +452,7 @@ async function processAndSave() {
     // Save to JSONBin
     const resp = await fetch(BIN_URL, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Master-Key': BIN_KEY },
+      headers: { 'Content-Type': 'application/json', 'X-Access-Key': BIN_KEY },
       body: json
     });
 
@@ -476,7 +476,7 @@ function showStatus(type, msg) {
 async function loadCurrentDataInfo() {
   const container = document.getElementById('currentDataRows');
   try {
-    const resp = await fetch(BIN_URL + '/latest', { headers: { 'X-Master-Key': BIN_KEY } });
+    const resp = await fetch(BIN_URL + '/latest', { headers: { 'X-Access-Key': BIN_KEY } });
     if (!resp.ok) throw new Error('No data');
     const json = await resp.json();
     const data = json.record;
@@ -500,7 +500,7 @@ async function clearData() {
   try {
     await fetch(BIN_URL, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Master-Key': BIN_KEY },
+      headers: { 'Content-Type': 'application/json', 'X-Access-Key': BIN_KEY },
       body: JSON.stringify({data:{}})
     });
     showStatus('success', '🗑 All data cleared.');
