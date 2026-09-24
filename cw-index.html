@@ -165,9 +165,7 @@ tr:hover td.name-cell,tr:hover td.area-cell{background:#fafbfc}
 </div>
 
 <script>
-const BIN_ID  = '6ab4e813ac6210605af022a9';
-const BIN_KEY = '$2a$10$ArDOgQ/w.Cp7NBJb276B0eVP2ITfSQlL.ap7uY1muhcUePMlvxiz6';
-const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+const DATA_URL = 'https://raw.githubusercontent.com/AlanaNugent/csw-compliance/main/data.json';
 const STATUS_SCORE = {o:0,d:1,m:2,c:3};
 const STATUS_FULL  = {c:'compliant',d:'due',o:'overdue',m:'missing'};
 
@@ -191,10 +189,9 @@ let activeCategory='all', sortKey='default', sortDir=1;
 // ── BOOT ──
 window.addEventListener('load', async () => {
   try {
-    const resp = await fetch(BIN_URL + '/latest', { headers:{'X-Master-Key':BIN_KEY} });
+    const resp = await fetch(DATA_URL + '?t=' + Date.now());
     if (!resp.ok) throw new Error('fetch failed');
-    const json = await resp.json();
-    const data = json.record;
+    const data = await resp.json();
 
     if (!data || !data.workers || Object.keys(data.workers).length === 0) {
       renderNoData(); return;

@@ -106,6 +106,11 @@ header p{font-size:.72rem;opacity:.6;margin-top:2px}
       <input type="password" id="passwordInput" placeholder="Enter admin password"
              onkeydown="if(event.key==='Enter')doLogin()">
     </div>
+    <div class="input-group">
+      <label>GitHub Token <span style="font-weight:400;color:var(--muted)">(starts with ghp_)</span></label>
+      <input type="password" id="tokenInput" placeholder="ghp_..."
+             onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
     <button class="login-btn" onclick="doLogin()">Login</button>
     <div class="error-msg" id="errorMsg">❌ Incorrect password. Please try again.</div>
   </div>
@@ -210,9 +215,10 @@ header p{font-size:.72rem;opacity:.6;margin-top:2px}
 
 <script>
 const ADMIN_PASSWORD = 'cw2026';
-const BIN_ID  = '6ab4e813ac6210605af022a9';
-const BIN_KEY = '$2a$10$ArDOgQ/w.Cp7NBJb276B0eVP2ITfSQlL.ap7uY1muhcUePMlvxiz6';
-const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+const GITHUB_REPO  = 'AlanaNugent/csw-compliance';
+const GITHUB_FILE  = 'data.json';
+const GITHUB_API   = `https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE}`;
+let GITHUB_TOKEN = '';
 const NS = 'urn:schemas-microsoft-com:office:spreadsheet';
 
 const OFFICE_ROLES = ['care manager', 'care coordinator', 'field care supervisor'];
@@ -236,13 +242,20 @@ let fileStore = {};
 
 // ── LOGIN ──
 function doLogin() {
-  if (document.getElementById('passwordInput').value === ADMIN_PASSWORD) {
+  const pw = document.getElementById('passwordInput').value;
+  const tok = document.getElementById('tokenInput').value.trim();
+  if (pw === ADMIN_PASSWORD && tok.startsWith('ghp_')) {
+    GITHUB_TOKEN = tok;
     document.getElementById('loginSection').style.display = 'none';
     document.getElementById('adminSection').style.display = 'block';
     loadCurrentDataInfo();
-  } else {
+  } else if (pw !== ADMIN_PASSWORD) {
+    document.getElementById('errorMsg').textContent = '❌ Incorrect password. Please try again.';
     document.getElementById('errorMsg').style.display = 'block';
     document.getElementById('passwordInput').value = '';
+  } else {
+    document.getElementById('errorMsg').textContent = '❌ Please enter your GitHub token (starts with ghp_).';
+    document.getElementById('errorMsg').style.display = 'block';
   }
 }
 function doLogout() {
@@ -449,16 +462,27 @@ async function processAndSave() {
     const kb = (new Blob([json]).size / 1024).toFixed(1);
     console.log(`Payload size: ${kb}kb`);
 
-    // Save to JSONBin
-    const resp = await fetch(BIN_URL, {
+    // Save to GitHub
+    // First get current SHA (needed to update existing file)
+    let sha = null;
+    try {
+      const getResp = await fetch(GITHUB_API, {
+        headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Accept': 'application/vnd.github.v3+json' }
+      });
+      if (getResp.ok) { const fd = await getResp.json(); sha = fd.sha; }
+    } catch {}
+
+    // Encode content as base64
+    const b64 = btoa(unescape(encodeURIComponent(json)));
+    const putResp = await fetch(GITHUB_API, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Access-Key': BIN_KEY },
-      body: json
+      headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
+      body: JSON.stringify({ message: 'Update compliance data', content: b64, ...(sha ? { sha } : {}) })
     });
 
-    if (!resp.ok) throw new Error(`JSONBin error: ${resp.status} ${resp.statusText}`);
+    if (!putResp.ok) { const err = await putResp.json(); throw new Error(`GitHub error: ${putResp.status} — ${err.message}`); }
 
-    showStatus('success', `✅ Saved to cloud — ${allWorkers.length} staff members updated. Dashboard is now live for all users.`);
+    showStatus('success', `✅ Saved to GitHub — ${allWorkers.length} staff members updated. Dashboard is now live for all users.`);
     loadCurrentDataInfo();
   } catch (err) {
     showStatus('error', '❌ Error: ' + err.message);
@@ -476,10 +500,9 @@ function showStatus(type, msg) {
 async function loadCurrentDataInfo() {
   const container = document.getElementById('currentDataRows');
   try {
-    const resp = await fetch(BIN_URL + '/latest', { headers: { 'X-Access-Key': BIN_KEY } });
+    const resp = await fetch(`https://raw.githubusercontent.com/${GITHUB_REPO}/main/${GITHUB_FILE}?t=${Date.now()}`);
     if (!resp.ok) throw new Error('No data');
-    const json = await resp.json();
-    const data = json.record;
+    const data = await resp.json();
     if (!data || !data.updated) {
       container.innerHTML = `<div style="font-size:.78rem;color:var(--muted);padding:.5rem 0">No data saved yet.</div>`;
       return;
@@ -491,17 +514,23 @@ async function loadCurrentDataInfo() {
       <div class="data-row"><span class="lbl">Staff members</span><span class="val ok">${data.count || 0} loaded</span></div>
       <div class="data-row"><span class="lbl">Areas</span><span class="val ok">${areas.length > 0 ? areas.sort().join(', ') : 'None mapped'}</span></div>`;
   } catch {
-    container.innerHTML = `<div style="font-size:.78rem;color:var(--muted);padding:.5rem 0">No data saved yet.</div>`;
+    container.innerHTML = `<div style="font-size:.78rem;color:var(--muted);padding:.5rem 0">No data saved yet. Upload files above to get started.</div>`;
   }
 }
 
 async function clearData() {
   if (!confirm('Are you sure? This will clear all saved compliance data for all users.')) return;
   try {
-    await fetch(BIN_URL, {
+    let sha = null;
+    try {
+      const getResp = await fetch(GITHUB_API, { headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Accept': 'application/vnd.github.v3+json' } });
+      if (getResp.ok) { const fd = await getResp.json(); sha = fd.sha; }
+    } catch {}
+    const b64 = btoa('{"data":{}}');
+    await fetch(GITHUB_API, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Access-Key': BIN_KEY },
-      body: JSON.stringify({data:{}})
+      headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
+      body: JSON.stringify({ message: 'Clear compliance data', content: b64, ...(sha ? { sha } : {}) })
     });
     showStatus('success', '🗑 All data cleared.');
     loadCurrentDataInfo();
