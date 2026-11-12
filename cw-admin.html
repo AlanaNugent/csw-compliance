@@ -107,8 +107,8 @@ header p{font-size:.72rem;opacity:.6;margin-top:2px}
              onkeydown="if(event.key==='Enter')doLogin()">
     </div>
     <div class="input-group">
-      <label>GitHub Token <span style="font-weight:400;color:var(--muted)">(starts with ghp_)</span></label>
-      <input type="password" id="tokenInput" placeholder="ghp_..."
+      <label>GitHub Token <span style="font-weight:400;color:var(--muted)">(starts with github_pat_ or ghp_)</span></label>
+      <input type="password" id="tokenInput" placeholder="github_pat_..."
              onkeydown="if(event.key==='Enter')doLogin()">
     </div>
     <button class="login-btn" onclick="doLogin()">Login</button>
@@ -244,7 +244,7 @@ let fileStore = {};
 function doLogin() {
   const pw = document.getElementById('passwordInput').value;
   const tok = document.getElementById('tokenInput').value.trim();
-  if (pw === ADMIN_PASSWORD && tok.startsWith('ghp_')) {
+  if (pw === ADMIN_PASSWORD && (tok.startsWith('ghp_') || tok.startsWith('github_pat_'))) {
     GITHUB_TOKEN = tok;
     document.getElementById('loginSection').style.display = 'none';
     document.getElementById('adminSection').style.display = 'block';
@@ -254,7 +254,7 @@ function doLogin() {
     document.getElementById('errorMsg').style.display = 'block';
     document.getElementById('passwordInput').value = '';
   } else {
-    document.getElementById('errorMsg').textContent = '❌ Please enter your GitHub token (starts with ghp_).';
+    document.getElementById('errorMsg').textContent = '❌ Please enter your GitHub token (starts with github_pat_ or ghp_).';
     document.getElementById('errorMsg').style.display = 'block';
   }
 }
